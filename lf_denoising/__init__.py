@@ -43,10 +43,16 @@ class LFDenoising(MultiPathAbstract):
         super().__init__(net_list, optim_list, scheduler_list)
 
 class FusionModule(nn.Module):
-    def __init__(self, inplanes=4 * 81, planes=81, stride=1, depths=None):
+    def __init__(self, inplanes=4 * 81, planes=81, stride=1, depths=None, use_residual=False):
         super(FusionModule, self).__init__()
         self.ln1 = nn.LayerNorm(inplanes)
-        self.conv_begin = nn.Conv2d(in_channels=inplanes, out_channels=planes, kernel_size=(1, 1))
+        self.use_residual = use_residual
+        hidden_planes = 4
+        self.conv_begin = nn.Sequential(
+            nn.Conv3d(in_channels=1, out_channels=hidden_planes, kernel_size=(2,1,1),stride=(2,1,1)),
+            nn.ReLU(),
+            nn.Conv3d(in_channels=hidden_planes, out_channels=1, kernel_size=(1,1,1),stride=(1,1,1))
+        )
 
         self.ResGroup_1 = ResGroup(planes, planes)
         self.ResGroup_2 = ResGroup(planes, planes)
@@ -90,11 +96,13 @@ class FusionModule(nn.Module):
         return x
 
     def forward(self, xs, yt):
-        x = torch.cat([xs, yt], dim=1)
-        swinir = self.model(x)
-        out = self.conv_begin(x)
+        if self.use_residual:
+            residual = (xs + yt) / 2
 
-        out = self.ResGroup_1(out)
+        x = torch.cat([xs, yt], dim=2).view(xs.shape[0], xs.shape[1] + yt.shape[1], *xs.shape[2:])
+        swinir = self.model(x)
+
+        out = self.conv_begin(x.unsqueeze(1)).squeeze(1)
         out = self.ResGroup_2(out)
         out = self.ResGroup_3(out)
         out = self.ResGroup_4(out)
@@ -102,6 +110,8 @@ class FusionModule(nn.Module):
 
         out = self.final(out)
 
-        out = out + self.conv_begin(swinir)
+        out = out + self.conv_begin(swinir.unsqueeze(1)).squeeze(1)
+        if self.use_residual:
+            out = out + residual
 
         return out

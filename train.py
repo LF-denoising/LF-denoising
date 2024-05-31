@@ -46,6 +46,8 @@ parser.add_argument("--n_epochs", type=int, default=30,
                     help="number of training epochs")
 parser.add_argument('--lr', type=float, default=1e-4,
                     help='initial learning rate')
+parser.add_argument('--fusion_lr_ratio', type=float, default=1,
+                    help='initial learning rate ratio for fusion layer')
 parser.add_argument('--step_size', type=float, default=5,
                     help="step size for training, default 5")
 parser.add_argument('--step_gamma', type=float, default=0.3,
@@ -56,6 +58,10 @@ parser.add_argument("--b2", type=float, default=0.999,
                     help="Adam: bata2, default 0.999")
 parser.add_argument('--mask_fusion_loss', type=bool, default=True,
                     help="use mask loss for fusion layers training, default True")
+parser.add_argument('--fusion_reg_ratio', type=float, default=0.4,
+                    help="The regulation intensity for fusion loss, default 0.4")
+parser.add_argument('--fusion_avg_residual', type=bool, default=False,
+                    help="Use average residual connection to fusion layer, default False")
 parser.add_argument('--scale_factor', type=int, default=1,
                     help='the factor for image intensity scaling, default 1')
 parser.add_argument('--datasets_path', type=str, default='datasets',
@@ -133,9 +139,10 @@ denoise_generator = LFDenoising(
     gamma=opt.step_gamma
 )
 
-fusion_layer = FusionModule(inplanes=2 * opt.patch_y, planes=opt.patch_y)
+fusion_layer = FusionModule(
+    inplanes=2 * opt.patch_y, planes=opt.patch_y, use_residual=opt.fusion_avg_residual)
 fusion_optim = optim.Adam(fusion_layer.parameters(),
-                          lr=opt.lr, betas=(opt.b1, opt.b2))
+                          lr=opt.lr * opt.fusion_lr_ratio, betas=(opt.b1, opt.b2))
 fusion_scheduler = optim.lr_scheduler.StepLR(
     fusion_optim, step_size=opt.step_size, gamma=opt.step_gamma)
 
@@ -224,7 +231,8 @@ def train_epoch():
                 L2_pixelwise(predict, multi_target3) + 0.5 * \
                 L1_pixelwise(predict, multi_target3)
 
-        total_loss = loss_7 * 0.2 + loss_8 * 0.8
+        total_loss = loss_7 * opt.fusion_reg_ratio + \
+            loss_8 * (1 - opt.fusion_reg_ratio)
         total_loss.backward()
         fusion_optim.step()
         fusion_layer.train(False)
