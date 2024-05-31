@@ -21,6 +21,7 @@ import re
 from torch.utils.data import DataLoader
 from utils.save_params import save_yaml
 from utils.round_view import RoundView
+from utils.utils import test_img_list_generate
 
 
 def parse_idx_range(s):
@@ -32,24 +33,24 @@ def parse_idx_range(s):
         vals = list(range(int(m.group(1)), int(m.group(2))+1))
     else:
         vals = s.split(',')
-    return [f"test_No{x}.tif" for x in vals]
+    return [int(x) for x in vals]
 
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--n_epochs", type=int, default=100,
-                    help="number of training epochs")
 parser.add_argument('--GPU', type=str, default='0',
                     help="the index of GPU you will use for computation (e.g. '0')")
 parser.add_argument('--patch_s', type=int, default=128,
                     help="the spatial size of 3D patches (patch size in x and y dimension)")
 parser.add_argument('--total_view', type=int, default=169,
                     help="the angular size of LF images, should be a square of an odd integer. default 169 (13*13)")
+parser.add_argument('--radius', type=int, default=5,
+                    help="the radius of selected LF images, default 5")
 parser.add_argument('--overlap_factor', type=float, default=0.25,
                     help="the overlap factor between two adjacent patches, default 0.25")
 parser.add_argument('--batch_size', type=int,
                     default=1, help="the batch_size, limited by your VRAM, default 1")
-parser.add_argument('--radius', type=int, default=5,
-                    help="the radius of selected LF images, default 5")
+parser.add_argument('--fusion_avg_residual', type=bool, default=False,
+                    help="Use average residual connection to fusion layer, default False")
 parser.add_argument('--scale_factor', type=int, default=1,
                     help='the factor for image intensity scaling, default 1')
 parser.add_argument('--datasets_path', type=str,
@@ -70,6 +71,8 @@ parser.add_argument('--subname', type=str, default='',
                     help='A suffix append to output directory')
 opt = parser.parse_args()
 
+opt.img_list = test_img_list_generate(
+    opt.img_list, opt.datasets_path + '/' + opt.datasets_folder)
 img_list = opt.img_list
 
 opt.cut_uv = 2
@@ -148,7 +151,8 @@ denoise_generator = LFDenoising(
     input_dropout_rate=0
 )
 
-fusion_layer = FusionModule(inplanes=2 * opt.patch_y, planes=opt.patch_y)
+fusion_layer = FusionModule(
+    inplanes=2 * opt.patch_y, planes=opt.patch_y, use_residual=opt.fusion_avg_residual)
 
 
 def test():
