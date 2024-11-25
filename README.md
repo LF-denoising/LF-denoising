@@ -1,4 +1,4 @@
-# Self-supervised light-field denoising empowers high-sensitivity fast 3D fluorescence imaging without temporal dependency
+# Leveraging spatial-angular redundancy for self-supervised denoising empowers low-phototoxicity 3D fluorescence imaging without temporal dependency
 
 # System requirements
 ## Recommended Configuration
