@@ -46,6 +46,8 @@ For more information about training script arguments, run
 python train.py --help
 ```
 
+The training process could take 1~2 hours, depending on your training configuration and the computation ability of your system.
+
 ## Testing LF-denoising
 
 Download the dataset ([here](https://zenodo.org/records/11274187)). Place all the TIFF files in `example_test` to `./datasets/example_test/`.
@@ -57,6 +59,8 @@ To start your testing process, run
 ```bash
 python test.py
 ```
+
+The testing process will take usually 10 seconds ~ 3 minutes, depending on the computation ability of your system.
 
 You can use your own model by assigning the pth directory, denoise model name and epoch number by
 
