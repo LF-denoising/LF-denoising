@@ -26,7 +26,7 @@ It is worthing noting that the PyTorch installed by pip should be manually check
 
 We provide a demo training dataset, which contains 59 LF images of α-tubulin membrane. You can train the demo model by following steps:
 
-1. Download the dataset ([here](https://zenodo.org/records/11274187)). Place all the TIFF files in `example` to `./datasets/example/`.
+1. Download the dataset ([here](https://zenodo.org/records/16938669)). Place all the TIFF files in `example` to `./datasets/example/`.
 2. To start your training process, run
 ```bash
 python train.py
@@ -52,7 +52,7 @@ The training process could take 1~2 hours, depending on your training configurat
 
 Download the dataset ([here](https://zenodo.org/records/11274187)). Place all the TIFF files in `example_test` to `./datasets/example_test/`.
 
-You can test our pretrained model (download at [here](https://zenodo.org/records/11274324)) or train your own model as described in previous section.
+You can test our pretrained model (download at [here](https://zenodo.org/records/16938762)) or train your own model as described in previous section.
 
 To start your testing process, run
 
